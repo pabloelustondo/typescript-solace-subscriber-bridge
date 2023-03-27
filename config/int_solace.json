@@ -1,0 +1,18 @@
+{
+    "solace": {
+        "url": "ws://localhost:8008",
+        "userName": "admin",
+        "password": "admin",
+        "vpnName": "default",
+
+        "topics": {
+            "topic1": "topic1",
+            "topic2": "topic2"
+        },
+
+        "queues": {
+            "queue1": "queue1",
+            "queue2": "queue2"
+        }
+    }
+}
