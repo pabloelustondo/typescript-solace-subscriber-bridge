@@ -1,0 +1,18 @@
+{
+    "name": "typescript-solace-subscriber-bridge",
+    "scripts": {
+        "start":"ts-node startup.ts"
+    },
+    "version": "0.0.0",
+    "description": "Simple Solace Queue subscriber that will use a configuration file to map messages to url representing services using a stateless delayed queue strategy for message retry",
+    "dependencies": {
+        "solclientjs": "10.11.0"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/pabloelustondo/typescript-solace-subscriber-bridge/settings"
+    },
+    "devDependencies": {
+        "ts-node": "10.9.1"
+    }
+}
