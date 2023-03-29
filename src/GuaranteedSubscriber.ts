@@ -1,39 +1,39 @@
 import solace from "solclientjs"
+import { SolaceConfigType } from "./SolaceConfigType"
+
 
 export class GuaranteedSubscriber {
     session:any = null;
     flow = null;
-    queueName:string;
     consuming:boolean = false;
-    topicName:string;
     subscribed: boolean = false;
     messageSubscriber: any;
     url: string;
     vpnName: string;
     userName: string;
     password: string;
+    queueName: string;
+    topicName: string = "";   //NOT USED FOR NOW
+    messageHandler: () => Promise<void>
     
     constructor(
-        queueName: any,
-        topicName: any,
-        url:      string,
-        vpnName:  string,
-        userName: string,
-        password: string,
+        solaceConfig: SolaceConfigType,
+        queueName: string,
+        messageHandler: () => Promise<void>
     
     ) { 
         this.session = null;
         this.flow = null;
-        this.queueName = queueName;
         this.consuming = false;
-        this.topicName = topicName;
         this.subscribed = false;
-        this.url =  url;
-        this.vpnName = vpnName;
-        this.userName = userName;
-        this.password = password;
+        this.url =  solaceConfig.solace.url;
+        this.vpnName = solaceConfig.solace.vpnName;
+        this.userName = solaceConfig.solace.userName;
+        this.password = solaceConfig.solace.password;
+        this.queueName = queueName;
+        this.messageHandler = messageHandler;
 
-        this.log('*** Consumer to "' + this.queueName + '" is ready to connect ***');
+        this.log('*** Queue Bridge Consumer to is ready to connect ***');
         
     }
 
@@ -178,7 +178,13 @@ export class GuaranteedSubscriber {
                     this.messageSubscriber.on(solace.MessageConsumerEventName.MESSAGE,  (message:any) => {
                         this.log('Received message: "' + message.getBinaryAttachment() + '",' +
                             ' details:\n' + message.dump());
-                        // Need to explicitly ack otherwise it will not be deleted from the message router
+                        
+                        
+                        // =======  MESSAGE IS RECEIVED AND WILL BE CONSUMED =========
+                        this.messageHandler().
+                            then(() => console.log("OK"));
+                        // Need to explicitly ack otherwise it will not be deleted from the message 
+                        console.log("GOING TO acknowledge ! ")
                         message.acknowledge();
                     });
                    
@@ -226,7 +232,7 @@ export class GuaranteedSubscriber {
     };
 
     // Disconnects the subscriber from queue on Solace PubSub+ Event Broker
-    stopConsume() {
+    stopConsume( ) {
         if (this.session !== null) {
             if (this.consuming) {
                 this.consuming = false;
@@ -247,13 +253,13 @@ export class GuaranteedSubscriber {
     };
 
     // Unsubscribes from topic on Solace PubSub+ Event Broker
-    unsubscribe() {
+    unsubscribe( ) {
       if (this.session !== null) {
         if (this.subscribed) {
             this.log('Unsubscribing from topic: ' + this.topicName);
           try {
             this.messageSubscriber.removeSubscription(
-              solace.SolclientFactory.createTopicDestination(this.topicName),
+              solace.SolclientFactory.createTopicDestination( this.topicName ),
               this.topicName, // correlation key as topic name
               10000 // 10 seconds timeout for this operation
             );

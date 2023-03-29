@@ -1,7 +1,12 @@
 import { QueueBridgeConsumer  } from "./src/QueueBridgeConsumer"
-import  config from "./config.json"
+import configSolace from "./config/int_solace.json"
+import configSolaceBridge from "./config/int_solace_bridge.json"
 
 
-const queueBridgeConsumer = new QueueBridgeConsumer(config)
+
+const queueBridgeConsumer = new QueueBridgeConsumer(
+    configSolace,
+    configSolaceBridge
+)
 
 queueBridgeConsumer.startup()
