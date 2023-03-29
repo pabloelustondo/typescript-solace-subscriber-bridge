@@ -30,11 +30,12 @@ const DEFAULT_USER_NAME = "admin";
 const DEFAULT_PASSWORD = "admin";
 const DEFAULT_VPN = "default"
 
-var GuaranteedPublisher = function (topicName) {
+var GuaranteedPublisher = function (topicName, numberOfMessages) {
     'use strict';
     var publisher = {};
     publisher.session = null;
     publisher.topicName = topicName;
+    publisher.numberOfMessages = numberOfMessages;
 
     // Logger
     publisher.log = function (line) {
@@ -76,8 +77,11 @@ var GuaranteedPublisher = function (topicName) {
         }
         // define session event listeners
         publisher.session.on(solace.SessionEventCode.UP_NOTICE, function (sessionEvent) {
-            publisher.log('=== Successfully connected and ready to publish messages. ==='+ sessionEvent);
-            publisher.publish();
+            publisher.log('=== Successfully connected and ready to publish messages. ===' + sessionEvent);
+            for (let msg = 0; msg < publisher.numberOfMessages; msg++) { 
+                publisher.publish(msg);
+            }
+
         });
         publisher.session.on(solace.SessionEventCode.CONNECT_FAILED_ERROR, function (sessionEvent) {
             publisher.log('Connection failed to the message router: ' + sessionEvent.infoStr +
@@ -93,12 +97,12 @@ var GuaranteedPublisher = function (topicName) {
         publisher.session.on(solace.SessionEventCode.ACKNOWLEDGED_MESSAGE, function (sessionEvent) {
             publisher.log('Delivery of message to PubSub+ Broker with correlation key = ' +
                 sessionEvent.correlationKey.id + ' confirmed.');
-            publisher.exit();
+           // publisher.exit();
         });
         publisher.session.on(solace.SessionEventCode.REJECTED_MESSAGE_ERROR, function (sessionEvent) {
             publisher.log('Delivery of message to PubSub+ Broker with correlation key = ' +
                 sessionEvent.correlationKey.id + ' rejected, info: ' + sessionEvent.infoStr);
-            publisher.exit();
+           // publisher.exit();
         });
 
         publisher.connectToSolace();   
@@ -115,9 +119,10 @@ var GuaranteedPublisher = function (topicName) {
     };
 
     // Publish one message
-    publisher.publish = function () {
+    publisher.publish = function (msg) {
         if (publisher.session !== null) {
-            var messageText = 'Sample Message';
+            const now = new Date;
+            var messageText = 'Sample Message ' + msg + " "+ now.toLocaleTimeString()
             var message = solace.SolclientFactory.createMessage();
             message.setBinaryAttachment(messageText);
             message.setDeliveryMode(solace.MessageDeliveryModeType.PERSISTENT);
@@ -151,7 +156,8 @@ var GuaranteedPublisher = function (topicName) {
       publisher.disconnect();
         setTimeout(function () {
             process.exit();
-        }, 1000); // wait for 1 second to finish
+        }, 1000000); // wait for 1 second to finish
+
     };
 
     // Gracefully disconnects from Solace PubSub+ Event Broker
@@ -184,6 +190,6 @@ solace.SolclientFactory.init(factoryProps);
 solace.SolclientFactory.setLogLevel(solace.LogLevel.WARN);
 
 // create the publisher, specifying the name of the destination topic
-var publisher = new GuaranteedPublisher('consumer-group/shared-queue');
+var publisher = new GuaranteedPublisher('consumer-group/shared-queue', 100);
 // send message to Solace PubSub+ Event Broker
 publisher.run(process.argv);

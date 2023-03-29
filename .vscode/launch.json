@@ -4,8 +4,9 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+    
         {
-            "name": "Test Producer",
+            "name": "QB Producer",
             "program": "${workspaceFolder}/test/testProducer/GuaranteedPublisher.js",
             "request": "launch",
             "skipFiles": [
@@ -14,7 +15,7 @@
             "type": "node"
         },
         {
-            "name": "Test Server",
+            "name": "FX Mock Service",
             "program": "${workspaceFolder}/test/testServer/testServer.js",
             "request": "launch",
             "skipFiles": [
@@ -24,8 +25,8 @@
         },
 
         {
+            "name": "QB Consumer",
             "command": "npm start",
-            "name": "Run npm start",
             "request": "launch",
             "type": "node-terminal"
         }

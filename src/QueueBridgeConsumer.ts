@@ -6,7 +6,7 @@ import axios from "axios"
 async function messageHandler(): Promise<void> { 
 
     console.log("EVENT HANDLER GOT A MESSAGE")
-    axios({
+    return axios({
         method: "get",
         url: "http://localhost:3000/message"
       });

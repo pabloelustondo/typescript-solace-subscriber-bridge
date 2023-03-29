@@ -31,6 +31,7 @@ export class GuaranteedSubscriber {
         this.userName = solaceConfig.solace.userName;
         this.password = solaceConfig.solace.password;
         this.queueName = queueName;
+        this.topicName = queueName + "-retry";
         this.messageHandler = messageHandler;
 
         this.log('*** Queue Bridge Consumer to is ready to connect ***');
@@ -180,9 +181,15 @@ export class GuaranteedSubscriber {
                             ' details:\n' + message.dump());
                         
                         
-                        // =======  MESSAGE IS RECEIVED AND WILL BE CONSUMED =========
+                        // =======  MESSAGE IS RECEIVED AND WILL BE CONSUMED 
+
                         this.messageHandler().
-                            then(() => console.log("OK"));
+                            then(() => console.log("SUCCESS PROCESSING SERVICE")).
+                            catch(() => {
+                                console.log("ERROR PROCESSING SERVICE")
+                                this.publish('ERROR')
+                            });
+                        
                         // Need to explicitly ack otherwise it will not be deleted from the message 
                         console.log("GOING TO acknowledge ! ")
                         message.acknowledge();
@@ -288,6 +295,40 @@ export class GuaranteedSubscriber {
             }
         } else {
             this.log('Not connected to Solace PubSub+ Event Broker.');
+        }
+    };
+
+        // Publish one message
+    publish(msg:string) {
+        if (this.session !== null) {
+            const now = new Date;
+            var messageText = 'Sample Message ' + msg + " "+ now.toLocaleTimeString()
+            var message = solace.SolclientFactory.createMessage();
+            message.setBinaryAttachment(messageText);
+            message.setDeliveryMode(solace.MessageDeliveryModeType.PERSISTENT);
+            // OPTIONAL: You can set a correlation key on the message and check for the correlation
+            // in the ACKNOWLEDGE_MESSAGE callback. Define a correlation key object
+            const correlationKey = {
+                name: "MESSAGE_CORRELATIONKEY",
+                id: Date.now()
+            };
+            message.setCorrelationKey(correlationKey);
+            this.log('Publishing message "' + messageText + '" to topic "' + this.topicName + '/' + correlationKey.id + '"...');
+            /*
+            message.setDestination(solace.SolclientFactory.createTopicDestination(publisher.topicName + '/' + correlationKey.id));
+            */
+
+            message.setDestination(solace.SolclientFactory.createDurableQueueDestination(this.topicName))
+
+            try {
+                // Delivery not yet confirmed. See ConfirmedPublish.js
+                this.session.send(message);
+                this.log('Message sent with correlation key: ' + correlationKey.id);
+            } catch (error: any) {
+                this.log(error.toString());
+            }
+        } else {
+            this.log('Cannot publish messages because not connected to Solace PubSub+ Event Broker.');
         }
     };
 
