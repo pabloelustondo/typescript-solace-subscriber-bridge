@@ -14,12 +14,12 @@ export class GuaranteedSubscriber {
     password: string;
     queueName: string;
     topicName: string = "";   //NOT USED FOR NOW
-    messageHandler: () => Promise<void>
+    messageHandler: (message:any) => Promise<void>
     
     constructor(
         solaceConfig: SolaceConfigType,
         queueName: string,
-        messageHandler: () => Promise<void>
+        messageHandler: (message:any) => Promise<void>
     
     ) { 
         this.session = null;
@@ -183,16 +183,20 @@ export class GuaranteedSubscriber {
                         
                         // =======  MESSAGE IS RECEIVED AND WILL BE CONSUMED 
 
-                        this.messageHandler().
+                        this.messageHandler(message).
                             then(() => console.log("SUCCESS PROCESSING SERVICE")).
                             catch(() => {
                                 console.log("ERROR PROCESSING SERVICE")
                                 this.publish('ERROR')
+                            }).
+                            finally(() => { 
+                                console.log("GOING TO Acknowledge the message  ")
+                                message.acknowledge();
                             });
                         
                         // Need to explicitly ack otherwise it will not be deleted from the message 
-                        console.log("GOING TO acknowledge ! ")
-                        message.acknowledge();
+    
+     
                     });
                    
                     // Connect the message subscriber

@@ -2,15 +2,15 @@ import { GuaranteedSubscriber } from "./GuaranteedSubscriber"
 import { SolaceConfigType } from "./SolaceConfigType"
 import { SolaceBridgeConfigType } from "./SolaceBridgeConfigType"
 import axios from "axios"
+import { Message } from 'solclientjs'
 
-async function messageHandler(): Promise<void> { 
-
-    console.log("EVENT HANDLER GOT A MESSAGE")
+async function messageHandler(message: Message): Promise<void> { 
+    const messageContent = message.getBinaryAttachment() || "no payload";
+    console.log("EVENT HANDLER GOT A MESSAGE" + messageContent.toString())
     return axios({
         method: "get",
         url: "http://localhost:3000/message"
       });
-
 }
 
 export class QueueBridgeConsumer {
