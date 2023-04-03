@@ -8,7 +8,7 @@ A message will be delayed based on a configuration set up per message type.
 //import { Message } from 'solclientjs'
 //const MAXIMUM_NUMBER_RETRY_OF_MESSAGES: number = 1000
 
-class InternalRetryQueue { 
+export class InternalRetryQueue { 
 
     messageCount: number = 0;
     

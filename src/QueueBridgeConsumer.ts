@@ -3,6 +3,7 @@ import { SolaceConfigType } from "./SolaceConfigType"
 import { SolaceBridgeConfigType } from "./SolaceBridgeConfigType"
 import axios from "axios"
 import { Message } from 'solclientjs'
+import {  InternalRetryQueue } from "./InternalRetryQueue"
 
 async function messageHandler(message: Message): Promise<void> { 
     const messageContent = message.getBinaryAttachment() || "no payload";
@@ -17,13 +18,18 @@ export class QueueBridgeConsumer {
     solaceConfig: SolaceConfigType;
     solaceBridgeConfig: SolaceBridgeConfigType;
     subscriber?: GuaranteedSubscriber;
+    internalRetryQueue: InternalRetryQueue
 
     constructor(
         solaceConfig: SolaceConfigType,
-        solaceBridgeConfig: SolaceBridgeConfigType) {
+        solaceBridgeConfig: SolaceBridgeConfigType,
+        internalRetryQueue: InternalRetryQueue
+    
+    ) {
         
         this.solaceConfig = solaceConfig;
         this.solaceBridgeConfig = solaceBridgeConfig;
+        this.internalRetryQueue = internalRetryQueue;
     }
 
     startup() {
@@ -33,11 +39,13 @@ export class QueueBridgeConsumer {
         console.log("Solace Bridge Configuration")
         console.log(this.solaceBridgeConfig)
         try {
+
                 // create the consumer, specifying the name of the queue
             this.subscriber = new GuaranteedSubscriber(
                 this.solaceConfig,
                 "consumer-group/shared-queue",
-                messageHandler
+                messageHandler,
+                this.internalRetryQueue
                 );
                 this.subscriber.init();
                 // subscribe to messages on Solace PubSub+ Event Broker

@@ -1,6 +1,6 @@
 import solace from "solclientjs"
 import { SolaceConfigType } from "./SolaceConfigType"
-import {  InternalRetryQueue } from "./InternalRetryQueue"
+
 
 export class GuaranteedSubscriber {
     session:any = null;
@@ -14,14 +14,12 @@ export class GuaranteedSubscriber {
     password: string;
     queueName: string;
     topicName: string = "";   //NOT USED FOR NOW
-    internalRetryQueue: InternalRetryQueue
     messageHandler: (message:any) => Promise<void>
     
     constructor(
         solaceConfig: SolaceConfigType,
         queueName: string,
-        messageHandler: (message: any) => Promise<void>,
-        internalRetryQueue: InternalRetryQueue
+        messageHandler: (message:any) => Promise<void>
     
     ) { 
         this.session = null;
@@ -35,7 +33,6 @@ export class GuaranteedSubscriber {
         this.queueName = queueName;
         this.topicName = queueName + "-retry";
         this.messageHandler = messageHandler;
-        this.internalRetryQueue = internalRetryQueue
 
         this.log('*** Queue Bridge Consumer to is ready to connect ***');
         
@@ -186,21 +183,13 @@ export class GuaranteedSubscriber {
                         
                         // =======  MESSAGE IS RECEIVED AND WILL BE CONSUMED 
 
-                        this.messageHandler(message)
-                            .then(() => {
-                                console.log("SUCCESS PROCESSING SERVICE")
-                            })
-                            .catch(() => {
-                                console.log("ERROR PROCESSING SERVICE ADD TO RETRY QUEUE")
-                              //  this.publish('ERROR')
-                                const delay = 1000;
-                                this.internalRetryQueue.processMessageLater(
-                                    message,
-                                    delay,
-                                    this.messageHandler
-                                )
-                            })
-                            .finally(() => { 
+                        this.messageHandler(message).
+                            then(() => console.log("SUCCESS PROCESSING SERVICE")).
+                            catch(() => {
+                                console.log("ERROR PROCESSING SERVICE")
+                                this.publish('ERROR')
+                            }).
+                            finally(() => { 
                                 console.log("GOING TO Acknowledge the message  ")
                                 message.acknowledge();
                             });

@@ -2,16 +2,19 @@ const http = require('http');
 
 const hostname = '127.0.0.1';
 const port = 3000;
-count = 0;
-FAILURE_RATE = 2;  // 2 => 50%   3=>33%   4=>25%...etc
+let count = 0;
+let countSuccess = 0;
+const FAILURE_RATE = 2;  // 2 => 50%   3=>33%   4=>25%...etc
 
 const server = http.createServer((req, res) => {
   if (count % FAILURE_RATE == 0) {
     res.statusCode = 200;
-    console.log('I am ok')
+    countSuccess++;
+    console.log('I processed ok total ok processed: ', countSuccess, "total received", count);
   } else { 
     res.statusCode = 400;
     console.log('I crushed ')
+    console.log('I processed ok total ok processed: ', countSuccess, "total received", count);
   }
 
    res.setHeader('Content-Type', 'text/plain');
