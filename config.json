@@ -4,7 +4,7 @@
         "vpn": "default",
         "user": "admin",
         "password": "admin",
-        "main_queue": "consumer-group/shared-queue",
+        "main_queue": "sample-queue",
         "retry_queue1":  "consumer-group/shared-queue_retry1",
         "retry_queue2":  "consumer-group/shared-queue_retry2",
         "retry_queue3":  "consumer-group/shared-queue_retry3"

@@ -1,6 +1,7 @@
-import solace from "solclientjs"
+import solace, { Message } from "solclientjs"
 import { SolaceConfigType } from "./SolaceConfigType"
-import {  InternalRetryQueue } from "./InternalRetryQueue"
+import { InternalRetryQueue } from "./InternalRetryQueue"
+import { writeToLogs } from "./Logger";
 
 export class GuaranteedSubscriber {
     session:any = null;
@@ -33,11 +34,9 @@ export class GuaranteedSubscriber {
         this.userName = solaceConfig.solace.userName;
         this.password = solaceConfig.solace.password;
         this.queueName = queueName;
-        this.topicName = queueName + "-retry";
+        this.topicName = queueName + "-DLQ";
         this.messageHandler = messageHandler;
         this.internalRetryQueue = internalRetryQueue
-
-        this.log('*** Queue Bridge Consumer to is ready to connect ***');
         
     }
 
@@ -82,8 +81,10 @@ export class GuaranteedSubscriber {
                 password: this.password,
                 publisherProperties: null
             });
+            writeToLogs("QB Consumer Session Started");
         } catch (error: any) {
-            this.log(error.toString());
+            this.log("ERROR:" + error.toString());
+            writeToLogs("ERROR QB Consumer Session NOT Started");
         }
 
         if (this.session != null) {
@@ -183,31 +184,32 @@ export class GuaranteedSubscriber {
                         this.log('Received message: "' + message.getBinaryAttachment() + '",' +
                             ' details:\n' + message.dump());
                         
-                        
-                        // =======  MESSAGE IS RECEIVED AND WILL BE CONSUMED 
+// =======  MESSAGE IS RECEIVED AND WILL BE CONSUMED 
+                        const msg = message.getBinaryAttachment().toString()
+                        const msgId = message.getGuaranteedMessageId()
 
-                        this.messageHandler(message)
-                            .then(() => {
-                                console.log("SUCCESS PROCESSING SERVICE")
-                            })
-                            .catch(() => {
-                                console.log("ERROR PROCESSING SERVICE ADD TO RETRY QUEUE")
-                              //  this.publish('ERROR')
-                                const delay = 1000;
+                        writeToLogs(`Message Received ${msgId} ${msg}`);
+
+                        this.messageHandler(message).
+                            then(() => {
+                                writeToLogs(`SUCCESS PROCESSING ${msg} ${msgId}`)
+                                message.acknowledge();
+                            }).
+                            catch(() => {
+                                writeToLogs(`ERROR PROCESSING ${msg} ${msgId}`)
                                 this.internalRetryQueue.processMessageLater(
                                     message,
-                                    delay,
-                                    this.messageHandler
+                                    1,
+                                    1000,
+                                    this.messageHandler,
+                                    (message) => { 
+                                        message.acknowledge()
+                                    },
+                                    (deadLetter) => { 
+                                        this.publish(deadLetter)
+                                    },
                                 )
                             })
-                            .finally(() => { 
-                                console.log("GOING TO Acknowledge the message  ")
-                                message.acknowledge();
-                            });
-                        
-                        // Need to explicitly ack otherwise it will not be deleted from the message 
-    
-     
                     });
                    
                     // Connect the message subscriber
@@ -220,6 +222,32 @@ export class GuaranteedSubscriber {
             this.log('Cannot start the queue subscriber because not connected to Solace PubSub+ Event Broker.');
         }
     };
+    /*
+
+    handleMessage(message: Message) { 
+
+        this.messageHandler(message)
+        .then(() => {
+            console.log("SUCCESS PROCESSING SERVICE, ACK MESSAGE")
+            message.acknowledge();
+        })
+        .catch(() => {
+            console.log("ERROR PROCESSING SERVICE ADD TO RETRY QUEUE")
+            const delay = 1000;
+            this.internalRetryQueue.processMessageLater(
+                message,
+                1,
+                delay,
+                this.messageHandler
+            )
+        })
+        .finally(() => { 
+            console.log("GOING TO Acknowledge the message  ")
+
+        });
+
+    }
+    */
 
     // Subscribes to topic on Solace PubSub+ Event Broker
     subscribe() {

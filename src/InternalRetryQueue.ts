@@ -8,6 +8,15 @@ A message will be delayed based on a configuration set up per message type.
 //import { Message } from 'solclientjs'
 //const MAXIMUM_NUMBER_RETRY_OF_MESSAGES: number = 1000
 
+import { Message } from 'solclientjs'
+import { writeToLogs } from "./Logger"
+
+const retryStrategy: { [key:number]:number } = {
+    1: 1000,
+   // 2: 1000,
+   // 3: 1000
+}
+
 export class InternalRetryQueue { 
 
     messageCount: number = 0;
@@ -17,26 +26,73 @@ export class InternalRetryQueue {
         message type,., handler type
 
     */
-    processMessageLater(message: string, delay: number, handler: (message: string ) =>  Promise<void> ) { 
+    processMessageLater(
+        message: any,
+        retry: number,
+        delay: number,
+        handler: (message: any) => Promise<void>,
+        acknowledger: (message: any) => void,
+        sendDeadLetter: (message: any) => void )
+    {
 
-        setTimeout(() => this.processMessage(message, handler) , delay, message) 
+        const msg = message.getBinaryAttachment().toString()
+        const msgId = message.getGuaranteedMessageId()
+
+        writeToLogs(`WILL RETRY ${msgId} ${msg} RETRY:${retry} DELAY:${delay}`);
+
+        setTimeout(
+            () =>
+                this.processMessage(message, retry, handler, acknowledger, sendDeadLetter),
+            delay,
+            message) 
         this.messageCount++;
         console.log(this.messageCount, (new Date()).toLocaleTimeString())
 
     }
 
-    processMessage(message: string, handler: (message: string ) =>  Promise<void>) { 
+    processMessage(
+        message: any,
+        retry: number,
+        handler: (message: Message) => Promise<void>,
+        acknowledger: (message: any) => void,
+        sendDeadLetter: (message: any) => void ) { 
 
-        this.log("Processing message", message);
-        handler(message).
-            then(
-                () => this.log("successfully processed ", message)
-            ).
-            catch(
-                () => this.log("error when processing", message)
-            ).
-            finally(
-                () => this.log("finally when processing", message)
+        this.log(`Processing message retry ${retry}` , this.messageCount.toString());
+        handler(message)
+            .then(
+                () => { 
+                const msg = message.getBinaryAttachment().toString()
+                const msgId = message.getGuaranteedMessageId()
+                    writeToLogs(`SUCCESS RETRY ${msgId} ${msg} RETRY:${retry}`);
+                    acknowledger(message);
+                }
+
+            )
+            .catch(
+                () =>
+                { 
+                    const msg = message.getBinaryAttachment().toString()
+                    const msgId = message.getGuaranteedMessageId()
+                    writeToLogs(`FAILED RETRY ${msgId} ${msg} RETRY:${retry}`);
+
+                    if (retryStrategy[retry]) {
+                        this.processMessageLater(
+                            message,
+                            retry + 1,
+                            1000,
+                            handler,
+                            acknowledger,
+                            sendDeadLetter
+                        )
+                    } else { 
+                        const deadLetter = `GAVE UP RETRY ${msgId} ${msg} RETRY:${retry}${message.dump()}`;
+
+                        writeToLogs(deadLetter);
+                        sendDeadLetter(deadLetter);
+                        acknowledger(message);
+                    }
+
+                }
             )
 
         this.messageCount--;
@@ -54,7 +110,7 @@ export class InternalRetryQueue {
 quick test
 
 
-*/
+
 
 import axios from "axios"
 
@@ -74,4 +130,6 @@ async function messageHandler(message: string ): Promise<void> {
 
 internalRetryQueue.processMessageLater("Hello", 1000, () => messageHandler("Hi 1 "));
 internalRetryQueue.processMessageLater("Hello", 1000, () => messageHandler("Hi 2 "));
+
+*/
     

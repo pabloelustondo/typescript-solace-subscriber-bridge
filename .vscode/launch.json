@@ -6,16 +6,17 @@
     "configurations": [
 
 
+
+
         {
             "name": "Test ....",
             "command": "npm test",
             "request": "launch",
             "type": "node-terminal"
-        }
-    
+        },
         {
             "name": "QB Producer",
-            "program": "${workspaceFolder}/integrationTests/testing_tools/MessagePublisher.js",
+            "program": "${workspaceFolder}/integrationTests/testing_tools/MessagePublisher2.js",
             "request": "launch",
             "skipFiles": [
                 "<node_internals>/**"

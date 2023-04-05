@@ -163,6 +163,7 @@ solace.SolclientFactory.init(factoryProps);
 // NOTICE: works only with ('solclientjs').debug
 solace.SolclientFactory.setLogLevel(solace.LogLevel.WARN);
 
+
 // create the publisher, specifying the name of the destination topic
 var publisher = new GuaranteedPublisher('consumer-group/shared-queue', NUMBER_OF_TEST_MESSAGES);
 // send message to Solace PubSub+ Event Broker

@@ -7,7 +7,7 @@ import {  InternalRetryQueue } from "./InternalRetryQueue"
 
 async function messageHandler(message: Message): Promise<void> { 
     const messageContent = message.getBinaryAttachment() || "no payload";
-    console.log("EVENT HANDLER GOT A MESSAGE" + messageContent.toString())
+    console.log("SENDING MESSAGE TO SERVICE" + messageContent.toString())
     return axios({
         method: "get",
         url: "http://localhost:3000/message"
@@ -43,7 +43,7 @@ export class QueueBridgeConsumer {
                 // create the consumer, specifying the name of the queue
             this.subscriber = new GuaranteedSubscriber(
                 this.solaceConfig,
-                "consumer-group/shared-queue",
+                "sample-queue",
                 messageHandler,
                 this.internalRetryQueue
                 );
