@@ -8,7 +8,11 @@ const hostname = '127.0.0.1';
 const port = 3000;
 let count = 0;
 let countSuccess = 0;
+
+const ALWAYS_SUCCEEDS = false;
+const ALWAYS_FAILS = false;
 const FAILURE_RATE = 2;  // 2 => 50%   3=>33%   4=>25%...etc
+
 
 function writeToLogs(message) { 
   const timestamp = (new Date()).toLocaleTimeString();
@@ -19,7 +23,7 @@ function writeToLogs(message) {
 }
 
 const server = http.createServer((req, res) => {
-  if (count % FAILURE_RATE == 0) {
+  if (ALWAYS_SUCCEEDS || ((!ALWAYS_FAILS) && (count % FAILURE_RATE == 0))) {
     res.statusCode = 200;
     countSuccess++;
     writeToLogs(`DID OK. total processed : ${ countSuccess } total received ${count}`);
@@ -32,7 +36,7 @@ const server = http.createServer((req, res) => {
    res.setHeader('Content-Type', 'text/plain');
    console.log('Received ' + count + " " + req.url)
    count++;
-   res.end('Received ' + req.url);
+   res.end(`Received ${req.url}  responded status: ${res.statusCode}`);
     
 });
 

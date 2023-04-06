@@ -4,7 +4,7 @@ const DEFAULT_USER_NAME = "admin";
 const DEFAULT_PASSWORD = "admin";
 const DEFAULT_VPN = "default";
 const DEFAULT_QUEUE_NAME = "sample-queue";
-const NUMBER_OF_TEST_MESSAGES = 100;
+const NUMBER_OF_TEST_MESSAGES = 30;
 const WINDOW_SIZE = 50;
 
 
@@ -119,7 +119,9 @@ var QueueProducer = function (solaceModule, queueName) {
         console.log("CALLING SEND MESSAGES" + producer.numOfMessagesSent);
         if (producer.session !== null) {
             //TO DO FIX THIS LOOP WHEN NUMBER OF MESSAGES IS SMALL
-            for (let x = producer.numOfMessagesInWindow; x < WINDOW_SIZE; x++) { 
+            for (let x = producer.numOfMessagesInWindow;
+                x < WINDOW_SIZE && this.numOfMessagesSent < this.numOfMessages;
+                x++) { 
                 await producer.sendMessage(producer.numOfMessagesSent);
             }
         } else {

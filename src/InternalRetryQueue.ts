@@ -13,8 +13,8 @@ import { writeToLogs } from "./Logger"
 
 const retryStrategy: { [key:number]:number } = {
     1: 1000,
-   // 2: 1000,
-   // 3: 1000
+    2: 1000,
+    3: 1000
 }
 
 export class InternalRetryQueue { 
@@ -63,7 +63,7 @@ export class InternalRetryQueue {
                 () => { 
                 const msg = message.getBinaryAttachment().toString()
                 const msgId = message.getGuaranteedMessageId()
-                    writeToLogs(`SUCCESS RETRY ${msgId} ${msg} RETRY:${retry}`);
+                    writeToLogs(`SUCCESS TRY ${msgId} ${msg} TRY:${retry}`);
                     acknowledger(message);
                 }
 

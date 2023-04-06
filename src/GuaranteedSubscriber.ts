@@ -197,10 +197,9 @@ export class GuaranteedSubscriber {
                             }).
                             catch(() => {
                                 writeToLogs(`ERROR PROCESSING ${msg} ${msgId}`)
-                                this.internalRetryQueue.processMessageLater(
+                                this.internalRetryQueue.processMessage(
                                     message,
-                                    1,
-                                    1000,
+                                    0,
                                     this.messageHandler,
                                     (message) => { 
                                         message.acknowledge()
