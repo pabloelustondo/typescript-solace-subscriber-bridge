@@ -2,7 +2,8 @@ const http = require('http');
 const fs = require('fs');
 
 const logtimestamp = (new Date()).toLocaleTimeString();
-const logfilename = `./logs/server-log=${logtimestamp}.log`;
+const logfilename1 = `./logs/qb_consumer-log${logtimestamp}.log`;
+const logfilename = logfilename1.replace(":","-")
 
 const hostname = '127.0.0.1';
 const port = 3000;
