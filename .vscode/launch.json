@@ -4,19 +4,9 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-
-
-
-
-        {
-            "name": "Test ....",
-            "command": "npm test",
-            "request": "launch",
-            "type": "node-terminal"
-        },
         {
             "name": "QB Producer",
-            "program": "${workspaceFolder}/integrationTests/testing_tools/MessagePublisher2.js",
+            "program": "${workspaceFolder}/integrationTests/testing_tools/TestingMessagePublisher.js",
             "request": "launch",
             "skipFiles": [
                 "<node_internals>/**"
@@ -25,7 +15,7 @@
         },
         {
             "name": "FX Mock Service",
-            "program": "${workspaceFolder}/integrationTests/testing_tools/HttpServerSimulator.js",
+            "program": "${workspaceFolder}/integrationTests/testing_tools/BackEndServerSimulator.js",
             "request": "launch",
             "skipFiles": [
                 "<node_internals>/**"

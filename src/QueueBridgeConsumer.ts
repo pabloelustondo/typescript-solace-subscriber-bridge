@@ -32,6 +32,7 @@ export class QueueBridgeConsumer {
         this.internalRetryQueue = internalRetryQueue;
     }
 
+    
     startup() {
         console.log("QueueBridgeConsumer Starting")
         console.log("Solace Configuration")

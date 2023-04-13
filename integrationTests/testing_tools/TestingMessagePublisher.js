@@ -4,8 +4,11 @@ const DEFAULT_USER_NAME = "admin";
 const DEFAULT_PASSWORD = "admin";
 const DEFAULT_VPN = "default";
 const DEFAULT_QUEUE_NAME = "sample-queue";
-const NUMBER_OF_TEST_MESSAGES = 30;
+const NUMBER_OF_TEST_MESSAGES = 1000;
 const WINDOW_SIZE = 50;
+const { v4: uuidv4 } = require('uuid');
+
+
 
 
 var QueueProducer = function (solaceModule, queueName) {
@@ -137,11 +140,19 @@ var QueueProducer = function (solaceModule, queueName) {
         message.setBinaryAttachment(messageText);
         message.setDeliveryMode(solace.MessageDeliveryModeType.PERSISTENT);
         // Define a correlation key object
+        console.log("sequenceNr : " + sequenceNr)
+
+        // Generate a new UUID
+        const newId = uuidv4();
+        console.log(" NEW ID " + newId);
+        message.setCorrelationId(newId);
+
         const correlationKey = {
-            name: "MESSAGE_CORRELATIONKEY",
-            id: sequenceNr,
+            name: "uuidv4();",
+            id: newId,
         };
         message.setCorrelationKey(correlationKey);
+
         try {
             producer.numOfMessagesSent++;
             producer.numOfMessagesInWindow++;

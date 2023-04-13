@@ -7,104 +7,117 @@ A message will be delayed based on a configuration set up per message type.
 */
 //import { Message } from 'solclientjs'
 //const MAXIMUM_NUMBER_RETRY_OF_MESSAGES: number = 1000
+import { v4 as uuidv4 } from "uuid";
+import { Message } from "solclientjs";
+import { writeToLogs } from "./Logger";
 
-import { Message } from 'solclientjs'
-import { writeToLogs } from "./Logger"
+const retryStrategy: { [key: number]: number } = {
+  // 1: 1000,
+  // 2: 1000,
+  // 3: 1000
+};
 
-const retryStrategy: { [key:number]:number } = {
-    1: 1000,
-    2: 1000,
-    3: 1000
-}
+export class InternalRetryQueue {
+  notConfirmedMessages: { [key: string]: Message } = {};
 
-export class InternalRetryQueue { 
+  messageCount: number = 0;
 
-    messageCount: number = 0;
-    
-    /*
+  /*
     TO=Do:
         message type,., handler type
 
     */
-    processMessageLater(
-        message: any,
-        retry: number,
-        delay: number,
-        handler: (message: any) => Promise<void>,
-        acknowledger: (message: any) => void,
-        sendDeadLetter: (message: any) => void )
-    {
+  processMessageLater(
+    message: any,
+    retry: number,
+    delay: number,
+    handler: (message: any) => Promise<void>,
+    acknowledger: (message: any) => void,
+    sendDeadLetter: (message: any) => void
+  ) {
+    const msg = message.getBinaryAttachment().toString();
+    const msgId = message.getCorrelationId();
 
-        const msg = message.getBinaryAttachment().toString()
-        const msgId = message.getGuaranteedMessageId()
+    writeToLogs(`WILL RETRY ${msgId} ${msg} RETRY:${retry} DELAY:${delay}`);
 
-        writeToLogs(`WILL RETRY ${msgId} ${msg} RETRY:${retry} DELAY:${delay}`);
+    setTimeout(
+      () =>
+        this.processMessage(
+          message,
+          retry,
+          handler,
+          acknowledger,
+          sendDeadLetter
+        ),
+      delay,
+      message
+    );
+    this.messageCount++;
+    console.log(this.messageCount, new Date().toLocaleTimeString());
+  }
 
-        setTimeout(
-            () =>
-                this.processMessage(message, retry, handler, acknowledger, sendDeadLetter),
-            delay,
-            message) 
-        this.messageCount++;
-        console.log(this.messageCount, (new Date()).toLocaleTimeString())
+  processMessage(
+    message: any,
+    retry: number,
+    handler: (message: Message) => Promise<void>,
+    acknowledger: (message: any) => void,
+    sendDeadLetter: (message: any) => void
+  ) {
+    this.log(`Processing message retry ${retry}`, this.messageCount.toString());
+    handler(message)
+      .then(() => {
+        const msg = message.getBinaryAttachment().toString();
+        const msgId = message.getCorrelationId();
+        writeToLogs(`SUCCESS TRY ${msgId} ${msg} TRY:${retry}`);
+        acknowledger(message);
+      })
+      .catch(() => {
+        const msg = message.getBinaryAttachment().toString();
+        const msgId = message.getCorrelationId();
+        writeToLogs(`FAILED RETRY ${msgId} ${msg} RETRY:${retry}`);
 
+        if (retryStrategy[retry]) {
+          this.processMessageLater(
+            message,
+            retry + 1,
+            1000,
+            handler,
+            acknowledger,
+            sendDeadLetter
+          );
+        } else {
+          this.notConfirmedMessages[msgId] = message;
+
+          writeToLogs(`sent message id to dead letter queue: ${msgId}`);
+          sendDeadLetter(message);
+        }
+      });
+
+    this.messageCount--;
+  }
+
+  processAcknowledge(message: Message) {
+    const msgId = message.getCorrelationId();
+
+    if (msgId) {
+      const messageSentToDLQ: Message = this.notConfirmedMessages[msgId];
+
+      if (messageSentToDLQ) {
+        messageSentToDLQ.acknowledge();
+        // else  ?? this should not happen, anyway if we have no message... nothing to do.. log this
+      }
+        // else  ?? this should not happen, anyway if we have no message... nothing to do.. log this
     }
+  }
 
-    processMessage(
-        message: any,
-        retry: number,
-        handler: (message: Message) => Promise<void>,
-        acknowledger: (message: any) => void,
-        sendDeadLetter: (message: any) => void ) { 
-
-        this.log(`Processing message retry ${retry}` , this.messageCount.toString());
-        handler(message)
-            .then(
-                () => { 
-                const msg = message.getBinaryAttachment().toString()
-                const msgId = message.getGuaranteedMessageId()
-                    writeToLogs(`SUCCESS TRY ${msgId} ${msg} TRY:${retry}`);
-                    acknowledger(message);
-                }
-
-            )
-            .catch(
-                () =>
-                { 
-                    const msg = message.getBinaryAttachment().toString()
-                    const msgId = message.getGuaranteedMessageId()
-                    writeToLogs(`FAILED RETRY ${msgId} ${msg} RETRY:${retry}`);
-
-                    if (retryStrategy[retry]) {
-                        this.processMessageLater(
-                            message,
-                            retry + 1,
-                            1000,
-                            handler,
-                            acknowledger,
-                            sendDeadLetter
-                        )
-                    } else { 
-                        const deadLetter = `GAVE UP RETRY ${msgId} ${msg} RETRY:${retry}${message.dump()}`;
-
-                        writeToLogs(deadLetter);
-                        sendDeadLetter(deadLetter);
-                        acknowledger(message);
-                    }
-
-                }
-            )
-
-        this.messageCount--;
-
-
-    }
-
-    log(label: string, message: string) { 
-        console.log(`${label} ${message} at ${(new Date()).toLocaleTimeString()} count:${this.messageCount}`)
-    }
+  log(label: string, message: string) {
+    console.log(
+      `${label} ${message} at ${new Date().toLocaleTimeString()} count:${
+        this.messageCount
+      }`
+    );
+  }
 }
-
 
 /*
 quick test
@@ -132,4 +145,3 @@ internalRetryQueue.processMessageLater("Hello", 1000, () => messageHandler("Hi 1
 internalRetryQueue.processMessageLater("Hello", 1000, () => messageHandler("Hi 2 "));
 
 */
-    

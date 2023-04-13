@@ -2,6 +2,8 @@ import solace, { Message } from "solclientjs"
 import { SolaceConfigType } from "./SolaceConfigType"
 import { InternalRetryQueue } from "./InternalRetryQueue"
 import { writeToLogs } from "./Logger";
+import { v4 as uuidv4 } from 'uuid';
+const WINDOW_SIZE = 50;
 
 export class GuaranteedSubscriber {
     session:any = null;
@@ -36,8 +38,7 @@ export class GuaranteedSubscriber {
         this.queueName = queueName;
         this.topicName = queueName + "-DLQ";
         this.messageHandler = messageHandler;
-        this.internalRetryQueue = internalRetryQueue
-        
+        this.internalRetryQueue = internalRetryQueue  
     }
 
     init() { 
@@ -79,9 +80,17 @@ export class GuaranteedSubscriber {
                 vpnName:  this.vpnName,
                 userName: this.userName,
                 password: this.password,
-                publisherProperties: null
+                publisherProperties: {
+                    acknowledgeMode: solace.MessagePublisherAcknowledgeMode.PER_MESSAGE,
+                    enabled: true
+                },
             });
             writeToLogs("QB Consumer Session Started");
+                       // configure the GM window size
+            const sol: any = solace;
+            const flowProps = new sol.FlowProperties();
+            flowProps.setGuaranteedWindowSize(WINDOW_SIZE)
+            
         } catch (error: any) {
             this.log("ERROR:" + error.toString());
             writeToLogs("ERROR QB Consumer Session NOT Started");
@@ -108,6 +117,22 @@ export class GuaranteedSubscriber {
                     this.session.dispose();
                     this.session = null;
                 }
+            });
+
+            // ACKNOWLEDGEMENT RECEIVED
+
+            this.session.on(solace.SessionEventCode.ACKNOWLEDGED_MESSAGE, (ack: any) => {
+                const message = ack.message;
+                this.log('ACKNOWLEDGEMENT message: "');
+                const correlationId: string = message.getCorrelationId() || "no id";
+                
+                const correlationKey  = message.getCorrelationKey();
+                
+        //        const sentMessage = this.sentDeadLetterQueues[correlationId];
+                this.log(`ACKN: ${message} | ${correlationId} | ${correlationKey}`);
+
+                this.internalRetryQueue.processAcknowledge(message)
+
             });
 
             this.connectToSolace();
@@ -180,15 +205,22 @@ export class GuaranteedSubscriber {
                     });
                    
                     // Define message received event listener
-                    this.messageSubscriber.on(solace.MessageConsumerEventName.MESSAGE,  (message:any) => {
+                    this.messageSubscriber.on(solace.MessageConsumerEventName.MESSAGE, (message: any) => {
+                        
+                        const correlationKey = message.getCorrelationKey();
+                        const load = Object.keys(this.internalRetryQueue.notConfirmedMessages).length;
+
+                        this.log(`LOAD: ${load}`);
+
                         this.log('Received message: "' + message.getBinaryAttachment() + '",' +
                             ' details:\n' + message.dump());
                         
 // =======  MESSAGE IS RECEIVED AND WILL BE CONSUMED 
                         const msg = message.getBinaryAttachment().toString()
                         const msgId = message.getGuaranteedMessageId()
+                        const msgId2 = message.getCorrelationId();
 
-                        writeToLogs(`Message Received ${msgId} ${msg}`);
+                        writeToLogs(`Message Received ${msgId}   ${msg}  msgId2 ${msgId2} ${correlationKey}`);
 
                         this.messageHandler(message).
                             then(() => {
@@ -340,32 +372,41 @@ export class GuaranteedSubscriber {
         }
     };
 
-        // Publish one message
-    publish(msg:string) {
-        if (this.session !== null) {
-            const now = new Date;
-            var messageText = 'Sample Message ' + msg + " "+ now.toLocaleTimeString()
-            var message = solace.SolclientFactory.createMessage();
-            message.setBinaryAttachment(messageText);
-            message.setDeliveryMode(solace.MessageDeliveryModeType.PERSISTENT);
-            // OPTIONAL: You can set a correlation key on the message and check for the correlation
-            // in the ACKNOWLEDGE_MESSAGE callback. Define a correlation key object
-            const correlationKey = {
-                name: "MESSAGE_CORRELATIONKEY",
-                id: Date.now()
-            };
-            message.setCorrelationKey(correlationKey);
-            this.log('Publishing message "' + messageText + '" to topic "' + this.topicName + '/' + correlationKey.id + '"...');
-            /*
-            message.setDestination(solace.SolclientFactory.createTopicDestination(publisher.topicName + '/' + correlationKey.id));
-            */
+        // Publish message to DEAD LETTER QUEUE
+    publish(message: Message) {
 
-            message.setDestination(solace.SolclientFactory.createDurableQueueDestination(this.topicName))
+        const correlationKey = message.getCorrelationKey();
+
+        const correlationId = message.getCorrelationId();
+        const messageContent = message.getBinaryAttachment()?.toString();
+        const appMsgId = message.getApplicationMessageId();
+
+
+        var messageText = 'Sample Message';
+        var message = solace.SolclientFactory.createMessage();
+        message.setCorrelationId(correlationId);
+        message.setDestination(solace.SolclientFactory.createDurableQueueDestination(this.topicName));
+        message.setBinaryAttachment(messageText);
+        message.setDeliveryMode(solace.MessageDeliveryModeType.PERSISTENT);
+        // Define a correlation key object
+
+        // Generate a new UUID
+        const newId = uuidv4();
+        console.log(" NEW ID " + newId);
+        message.setCorrelationId(correlationId);
+
+
+
+
+        if (this.session !== null) {
+
+            this.log('Publishing message to dead letter queue correlationId ' + correlationId + '" to topic "' + this.topicName + '/' + correlationKey + '"...' + messageContent + "  appMsgId:" + appMsgId);
 
             try {
-                // Delivery not yet confirmed. See ConfirmedPublish.js
-                this.session.send(message);
-                this.log('Message sent with correlation key: ' + correlationKey.id);
+                // Delivery not yet confirmed. to dead letter queue
+                    message.setCorrelationKey(correlationKey);
+                    this.session.send(message);
+                    this.log('Message sent with correlation id: ' + correlationId);
             } catch (error: any) {
                 this.log(error.toString());
             }
