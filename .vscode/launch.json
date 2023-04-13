@@ -15,7 +15,7 @@
         },
         {
             "name": "FX Mock Service",
-            "program": "${workspaceFolder}/integrationTests/testing_tools/BackEndServerSimulator.js",
+            "program": "${workspaceFolder}/integrationTests/testing_tools/BackEndServiceSimulator.js",
             "request": "launch",
             "skipFiles": [
                 "<node_internals>/**"

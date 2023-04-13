@@ -64,6 +64,36 @@ export class QueueBridgeConsumer {
                 });
             } catch (error: any) {
                 console.log("ERROR:    ", error.toString());
-            }
+        }
+        
+
+
+        // QUEUE 2
+        try {
+
+            // create the consumer, specifying the name of the queue
+        this.subscriber = new GuaranteedSubscriber(
+            this.solaceConfig,
+            "sample-queue-2",
+            messageHandler,
+            this.internalRetryQueue
+            );
+            this.subscriber.init();
+            // subscribe to messages on Solace PubSub+ Event Broker
+            this.subscriber.connect();
+
+            // wait to be told to exit
+            this.subscriber.log("Press Ctrl-C to exit");
+            process.stdin.resume();
+            
+            process.on('SIGINT',  () =>  {
+                'use strict';
+                if (this.subscriber) { 
+                    this.subscriber.exit();
+                }
+            });
+        } catch (error: any) {
+            console.log("ERROR:    ", error.toString());
+        }
     }
 }

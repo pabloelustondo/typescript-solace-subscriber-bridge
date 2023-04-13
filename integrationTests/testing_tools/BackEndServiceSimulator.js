@@ -10,8 +10,8 @@ const port = 3000;
 let count = 0;
 let countSuccess = 0;
 
-const ALWAYS_SUCCEEDS = false;
-const ALWAYS_FAILS = true;
+const ALWAYS_SUCCEEDS = true;
+const ALWAYS_FAILS = false;
 const FAILURE_RATE = 2;  // 2 => 50%   3=>33%   4=>25%...etc
 
 

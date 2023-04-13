@@ -4,7 +4,7 @@ const DEFAULT_USER_NAME = "admin";
 const DEFAULT_PASSWORD = "admin";
 const DEFAULT_VPN = "default";
 const DEFAULT_QUEUE_NAME = "sample-queue";
-const NUMBER_OF_TEST_MESSAGES = 40;
+const NUMBER_OF_TEST_MESSAGES = 1000;
 const WINDOW_SIZE = 50;
 const { v4: uuidv4 } = require('uuid');
 
