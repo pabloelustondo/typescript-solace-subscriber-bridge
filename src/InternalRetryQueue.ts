@@ -18,7 +18,12 @@ const retryStrategy: { [key: number]: number } = {
 };
 
 export class InternalRetryQueue {
-  notConfirmedMessages: { [key: string]: Message } = {};
+  notConfirmedMessages: {
+    [key: string]: {
+      message: Message,
+      sent: boolean
+    }
+    } = { };
 
   messageCount: number = 0;
 
@@ -86,7 +91,7 @@ export class InternalRetryQueue {
             sendDeadLetter
           );
         } else {
-          this.notConfirmedMessages[msgId] = message;
+          this.notConfirmedMessages[msgId] = { message, sent: false };
 
           writeToLogs(`sent message id to dead letter queue: ${msgId}`);
           sendDeadLetter(message);
@@ -100,7 +105,7 @@ export class InternalRetryQueue {
     const msgId = message.getCorrelationId();
 
     if (msgId) {
-      const messageSentToDLQ: Message = this.notConfirmedMessages[msgId];
+      const messageSentToDLQ: Message = this.notConfirmedMessages[msgId].message;
 
       if (messageSentToDLQ) {
         messageSentToDLQ.acknowledge();
