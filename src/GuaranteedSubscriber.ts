@@ -6,7 +6,10 @@ import { v4 as uuidv4 } from 'uuid';
 const WINDOW_SIZE = 50;
 
 export class GuaranteedSubscriber {
-    session:any = null;
+    session: any = null;
+    messagesReceived: number = 0;
+    messagesAcknowledged: number = 0;
+
     flow = null;
     consuming:boolean = false;
     subscribed: boolean = false;
@@ -50,15 +53,24 @@ export class GuaranteedSubscriber {
         // enable logging to JavaScript console at WARN level
         // NOTICE: works only with ('solclientjs').debug
         solace.SolclientFactory.setLogLevel(solace.LogLevel.WARN);
+
+        setInterval(() => {
+            this.checkFlow()
+        }, 1000);
+        
     }
 
+    checkFlow() {
+        const now = new Date();
+        console.log(`HEARTBEAT  ${this.queueName} ${this.messagesAcknowledged}  - ${this.messagesReceived} ${now.toLocaleTimeString()} ${now.getMilliseconds()}`);
+     }
     // Logger
     log(line:any) {
         var now = new Date();
         var time = [('0' + now.getHours()).slice(-2), ('0' + now.getMinutes()).slice(-2),
             ('0' + now.getSeconds()).slice(-2)];
         var timestamp = '[' + time.join(':') + '] ';
-        console.log(timestamp + line);
+        //console.log(timestamp + line);
     };
 
     // Establishes connection to Solace PubSub+ Event Broker
@@ -216,6 +228,7 @@ export class GuaranteedSubscriber {
                             ' details:\n' + message.dump());
                         
 // =======  MESSAGE IS RECEIVED AND WILL BE CONSUMED 
+                        this.messagesReceived++;
                         const msg = message.getBinaryAttachment().toString()
                         const msgId = message.getGuaranteedMessageId()
                         const msgId2 = message.getCorrelationId();
@@ -226,6 +239,7 @@ export class GuaranteedSubscriber {
                             then(() => {
                                 writeToLogs(`SUCCESS PROCESSING ${msg} ${msgId}`)
                                 message.acknowledge();
+                                this.messagesAcknowledged++;
                             }).
                             catch(() => {
                                 writeToLogs(`ERROR PROCESSING ${msg} ${msgId}`)
@@ -234,7 +248,8 @@ export class GuaranteedSubscriber {
                                     0,
                                     this.messageHandler,
                                     (message) => { 
-                                        message.acknowledge()
+                                        message.acknowledge();
+                                        this.messagesAcknowledged++;
                                     },
                                     (deadLetter) => { 
                                         this.publish(deadLetter)
@@ -392,7 +407,7 @@ export class GuaranteedSubscriber {
 
         // Generate a new UUID
         const newId = uuidv4();
-        console.log(" NEW ID " + newId);
+        //console.log(" NEW ID " + newId);
         message.setCorrelationId(correlationId);
 
 
@@ -404,11 +419,20 @@ export class GuaranteedSubscriber {
 
             try {
                 // Delivery not yet confirmed. to dead letter queue
-                    message.setCorrelationKey(correlationKey);
-                    this.session.send(message);
-                    this.log('Message sent with correlation id: ' + correlationId);
+                message.setCorrelationKey(correlationKey);
+                this.session.send(message);
+               
             } catch (error: any) {
                 this.log(error.toString());
+
+                if (error.message = "Guaranteed Message Window Closed") { 
+                    this.log("Guaranteed Message Window Closed, retrying in 1 second");
+                    /*
+                    setTimeout(() => {
+                        this.publish(message);
+                    }, 1000);
+                    */
+                }
             }
         } else {
             this.log('Cannot publish messages because not connected to Solace PubSub+ Event Broker.');

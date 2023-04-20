@@ -58,7 +58,7 @@ export class InternalRetryQueue {
       message
     );
     this.messageCount++;
-    console.log(this.messageCount, new Date().toLocaleTimeString());
+    //console.log(this.messageCount, new Date().toLocaleTimeString());
   }
 
   processMessage(
@@ -116,11 +116,13 @@ export class InternalRetryQueue {
   }
 
   log(label: string, message: string) {
+    /*
     console.log(
       `${label} ${message} at ${new Date().toLocaleTimeString()} count:${
         this.messageCount
       }`
     );
+    */
   }
 }
 

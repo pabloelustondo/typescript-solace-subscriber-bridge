@@ -7,7 +7,7 @@ import {  InternalRetryQueue } from "./InternalRetryQueue"
 
 async function messageHandler(message: Message): Promise<void> { 
     const messageContent = message.getBinaryAttachment() || "no payload";
-    console.log("SENDING MESSAGE TO SERVICE" + messageContent.toString())
+    //console.log("SENDING MESSAGE TO SERVICE" + messageContent.toString())
     return axios({
         method: "get",
         url: "http://localhost:3000/message"

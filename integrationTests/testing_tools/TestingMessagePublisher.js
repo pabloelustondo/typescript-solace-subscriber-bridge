@@ -3,7 +3,7 @@ const DEFAULT_URL = "ws://localhost:8008";
 const DEFAULT_USER_NAME = "admin";
 const DEFAULT_PASSWORD = "admin";
 const DEFAULT_VPN = "default";
-const DEFAULT_QUEUE_NAME = "sample-queue";
+const DEFAULT_QUEUE_NAME = "sample-queue-2";
 const NUMBER_OF_TEST_MESSAGES = 1000;
 const WINDOW_SIZE = 50;
 const { v4: uuidv4 } = require('uuid');
@@ -29,15 +29,38 @@ var QueueProducer = function (solaceModule, queueName) {
         var time = [('0' + now.getHours()).slice(-2), ('0' + now.getMinutes()).slice(-2),
             ('0' + now.getSeconds()).slice(-2)];
         var timestamp = '[' + time.join(':') + '] ';
-        console.log(timestamp + line);
+        //console.log(timestamp + line);
     };
 
     producer.log('\n*** Producer to queue "' + producer.queueName + '" is ready to connect ***');
 
+
+    setInterval(() => {
+        producer.checkFlow()
+    }, 1000);
+    
+
+    producer.checkFlow = () => {
+        const now = new Date();
+
+        /*
+            producer.queueName = queueName;
+            producer.numOfMessages = NUMBER_OF_TEST_MESSAGES;
+            producer.numOfMessagesSent = 0;
+            producer.numOfMessagesConfirmed = 0;
+            producer.numOfMessagesInWindow = 0;
+            producer.messageAckRecvd = 0;
+        */
+        console.log(`HEARTBEAT ${producer.queueName} sent: ${producer.numOfMessagesSent} acks: ${producer.messageAckRecvd} window: ${producer.numOfMessagesInWindow} time: ${now.toLocaleTimeString()} ${now.getMilliseconds()}`);
+     }
+
     // main function
     producer.run = async function (argv) {
+        setInterval(() => {
+            producer.checkFlow()
+        }, 1000);
         await (producer.connect(argv));
-        console.log("DONE");
+        //console.log("DONE");
     };
 
     // Establishes connection to Solace PubSub+ Event Broker
@@ -119,7 +142,7 @@ var QueueProducer = function (solaceModule, queueName) {
     };
 
     producer.sendMessages = async function () {
-        console.log("CALLING SEND MESSAGES" + producer.numOfMessagesSent);
+        //console.log("CALLING SEND MESSAGES" + producer.numOfMessagesSent);
         if (producer.session !== null) {
             //TO DO FIX THIS LOOP WHEN NUMBER OF MESSAGES IS SMALL
             for (let x = producer.numOfMessagesInWindow;
@@ -140,11 +163,11 @@ var QueueProducer = function (solaceModule, queueName) {
         message.setBinaryAttachment(messageText);
         message.setDeliveryMode(solace.MessageDeliveryModeType.PERSISTENT);
         // Define a correlation key object
-        console.log("sequenceNr : " + sequenceNr)
+        //console.log("sequenceNr : " + sequenceNr)
 
         // Generate a new UUID
         const newId = uuidv4();
-        console.log(" NEW ID " + newId);
+       // console.log(" NEW ID " + newId);
         message.setCorrelationId(newId);
 
         const correlationKey = {
@@ -205,7 +228,7 @@ async function runTest() {
     // send message to Solace PubSub+ Event Broker
     await producer.run(process.argv);
 
-    console.log("DONE"); 
+    //console.log("DONE"); 
 }
 
 runTest();
