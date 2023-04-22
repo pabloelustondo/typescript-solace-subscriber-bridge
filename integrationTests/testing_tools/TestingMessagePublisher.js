@@ -3,8 +3,17 @@ const DEFAULT_URL = "ws://localhost:8008";
 const DEFAULT_USER_NAME = "admin";
 const DEFAULT_PASSWORD = "admin";
 const DEFAULT_VPN = "default";
-const DEFAULT_QUEUE_NAME = "sample-queue-2";
-const NUMBER_OF_TEST_MESSAGES = 1000;
+const TESTS = [{
+    queueName: "q-1",
+    numOfMessages: 10
+        },
+        {
+    queueName: "q-2",
+    numOfMessages: 10
+    }]
+    
+const DEFAULT_QUEUE_NAME_2 = "q-2";
+const NUMBER_OF_TEST_MESSAGES = 10;
 const WINDOW_SIZE = 50;
 const { v4: uuidv4 } = require('uuid');
 
@@ -212,7 +221,7 @@ var QueueProducer = function (solaceModule, queueName) {
     return producer;
 };
 
-async function runTest() {
+async function runTest(queueName) {
     // Initialize factory with the most recent API defaults
     var factoryProps = new solace.SolclientFactoryProperties();
     factoryProps.profile = solace.SolclientFactoryProfiles.version10;
@@ -223,13 +232,17 @@ async function runTest() {
     solace.SolclientFactory.setLogLevel(solace.LogLevel.WARN);
 
     // create the producer, specifying the name of the destination queue
-    var producer = new QueueProducer(solace, DEFAULT_QUEUE_NAME);
+    var producer = new QueueProducer(solace, queueName);
 
     // send message to Solace PubSub+ Event Broker
     await producer.run(process.argv);
 
     //console.log("DONE"); 
 }
-
-runTest();
+/*
+const DEFAULT_QUEUE_NAME_1 = "q-1";
+const DEFAULT_QUEUE_NAME_2 = "q-2";
+*/
+runTest(TESTS[0].queueName);
+runTest(TESTS[1].queueName);
 

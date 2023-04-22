@@ -6,7 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 const WINDOW_SIZE = 50;
 
 export class GuaranteedSubscriber {
-    session: any = null;
+    session: solace.Session;
     messagesReceived: number = 0;
     messagesAcknowledged: number = 0;
 
@@ -30,7 +30,6 @@ export class GuaranteedSubscriber {
         internalRetryQueue: InternalRetryQueue
     
     ) { 
-        this.session = null;
         this.flow = null;
         this.consuming = false;
         this.subscribed = false;
@@ -39,7 +38,7 @@ export class GuaranteedSubscriber {
         this.userName = solaceConfig.solace.userName;
         this.password = solaceConfig.solace.password;
         this.queueName = queueName;
-        this.topicName = queueName + "-DLQ";
+        this.topicName = queueName + "-dlq";
         this.messageHandler = messageHandler;
         this.internalRetryQueue = internalRetryQueue  
     }
@@ -96,8 +95,7 @@ export class GuaranteedSubscriber {
                     acknowledgeMode: solace.MessagePublisherAcknowledgeMode.PER_MESSAGE,
                     enabled: true
                 },
-            });
-            writeToLogs("QB Consumer Session Started");
+            })            writeToLogs("QB Consumer Session Started");
                        // configure the GM window size
             const sol: any = solace;
             const flowProps = new sol.FlowProperties();
@@ -164,6 +162,7 @@ export class GuaranteedSubscriber {
     // Starts consuming messages from Solace PubSub+ Event Broker
     startConsume() {
         if (this.session !== null) {
+            this.session.deleteQueue(this.queueName, 1);
             if (this.consuming) {
                 this.log('Already started subscriber for queue "' + this.queueName + '" and ready to receive messages.');
             } else {
@@ -241,8 +240,8 @@ export class GuaranteedSubscriber {
                                 message.acknowledge();
                                 this.messagesAcknowledged++;
                             }).
-                            catch(() => {
-                                writeToLogs(`ERROR PROCESSING ${msg} ${msgId}`)
+                            catch((error) => {
+                                writeToLogs(`ERROR PROCESSING ${msg} ${msgId} ${error.toString()}}}`)
                                 this.internalRetryQueue.processMessage(
                                     message,
                                     0,
@@ -330,6 +329,7 @@ export class GuaranteedSubscriber {
     // Disconnects the subscriber from queue on Solace PubSub+ Event Broker
     stopConsume( ) {
         if (this.session !== null) {
+            this.session.deleteQueue(this.queueName, 1);
             if (this.consuming) {
                 this.consuming = false;
                 this.log('Disconnecting consumption from queue: ' + this.queueName);

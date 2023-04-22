@@ -6,11 +6,13 @@ import { Message } from 'solclientjs'
 import {  InternalRetryQueue } from "./InternalRetryQueue"
 
 async function messageHandler(message: Message): Promise<void> { 
+    const queueName = message.getDestination()!.getName() || "no queue name";
     const messageContent = message.getBinaryAttachment() || "no payload";
     //console.log("SENDING MESSAGE TO SERVICE" + messageContent.toString())
     return axios({
-        method: "get",
-        url: "http://localhost:3000/message"
+        method: "post",
+        url: `http://localhost:3000/${queueName}`,
+        data: messageContent.toString(),
       });
 }
 
@@ -44,7 +46,7 @@ export class QueueBridgeConsumer {
                 // create the consumer, specifying the name of the queue
             this.subscriber = new GuaranteedSubscriber(
                 this.solaceConfig,
-                "sample-queue",
+                "q-1",
                 messageHandler,
                 this.internalRetryQueue
                 );
@@ -74,7 +76,7 @@ export class QueueBridgeConsumer {
             // create the consumer, specifying the name of the queue
         this.subscriber = new GuaranteedSubscriber(
             this.solaceConfig,
-            "sample-queue-2",
+            "q-2",
             messageHandler,
             this.internalRetryQueue
             );

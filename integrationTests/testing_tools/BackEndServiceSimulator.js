@@ -3,10 +3,11 @@ const fs = require('fs');
 const MongoClient = require('mongodb').MongoClient;
 
 // MongoDB connection URL
-const url = 'mongodb://localhost:27017/mydb';
+const url = 'mongodb://localhost:27017';
 
 // Create a new MongoClient
 const client = new MongoClient(url);
+
 
 const logtimestamp = (new Date()).toLocaleTimeString();
 const logfilename1 = `./logs/qb_consumer-log${logtimestamp}.log`;
@@ -38,6 +39,12 @@ async function run() {
   try {
     await client.connect();
     console.log('Connected to MongoDB!');
+    //TO-DO get collections names from configuration ?
+    await client.db('qb_stats').collection('req-q-1-200').deleteMany({});
+    await client.db('qb_stats').collection('req-q-1-400').deleteMany({});
+    await client.db('qb_stats').collection('req-q-2-200').deleteMany({});
+    await client.db('qb_stats').collection('req-q-2-400').deleteMany({});
+    console.log('Deleted all documents from requests collection');
   } catch(e) { 
     console.log(`FAILED Connected to MongoDB! ${e}`);
   };
@@ -56,9 +63,10 @@ async function run() {
     }
 
     const parsedUrl = req.url
-      try {
-      // Insert the requested URL and timestamp into the database
-      const result = await client.db('qb_stats').collection('requests').insertOne({
+    try {
+      collectionName = `req-${parsedUrl.replace("/", "")}-${res.statusCode}`
+              // Insert the requested URL and timestamp into the database
+      const result = await client.db('qb_stats').collection(collectionName).insertOne({
           url: parsedUrl,
           statusCode: res.statusCode,
           timestamp: new Date()
