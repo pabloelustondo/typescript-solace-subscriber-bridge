@@ -7,10 +7,9 @@ SERVER = "node ./testing_tools/BackEndServiceSimulator.js";
 const cleanQueue = async (queueName) => {
   try {
     const cmd = `curl -X DELETE -u admin:admin -H "Content-Type: application/json" http://localhost:8080/SEMP/v2/config/msgVpns/default/queues/${queueName}`;
-    const { stdout, stderr } = await exec(cmd);
+    await exec(cmd);
     console.log(`Queue cleaned: ${queueName}`);
     await createQueue(queueName);
-    return stdout;
   } catch (error) {
     console.error(`Error cleaning queue: ${error}`);
     throw error;
@@ -20,9 +19,10 @@ const cleanQueue = async (queueName) => {
 const createQueue = async (queueName) => {
   try {
     const cmd = `curl -X POST -u admin:admin -H "Content-Type: application/json" http://localhost:8080/SEMP/v2/config/msgVpns/default/queues -d '{ "queueName": "${queueName}", "accessType": "exclusive", "maxMsgSpoolUsage": 200, "permission": "consume", "ingressEnabled": true, "egressEnabled": true }'`;
-    const { stdout, stderr } = await exec(cmd);
+
+    await exec(cmd);
     console.log(`Queue created: ${queueName}`);
-    return stdout;
+
   } catch (error) {
     console.error(`Error creating queue: ${error}`);
     throw error;
