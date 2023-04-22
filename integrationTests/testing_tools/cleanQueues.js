@@ -1,19 +1,19 @@
 const { exec } = require('child_process');
 
-const deleteQueue = () => {
-  const cmd = `curl -X DELETE -u admin:admin -H "Content-Type: application/json" http://localhost:8080/SEMP/v2/config/msgVpns/default/queues/testQ2`;
+const cleanQueue = (queueName) => {
+  const cmd = `curl -X DELETE -u admin:admin -H "Content-Type: application/json" http://localhost:8080/SEMP/v2/config/msgVpns/default/queues/${queueName}`;
   exec(cmd, (error, stdout, stderr) => {
     if (error) {
-      console.error(`Error deleting queue: ${error}`);
+      console.error(`Error cleaning queue: ${error}`);
     } else {
-      console.log(`Queue deleted: ${stdout}`);
-      createQueue(); // call createQueue after the queue is deleted
+      console.log(`Queue cleaned: ${stdout}`);
+      createQueue(queueName); // call createQueue after the queue is cleaned
     }
   });
 };
 
-const createQueue = () => {
-  const cmd = `curl -X POST -u admin:admin -H "Content-Type: application/json" http://localhost:8080/SEMP/v2/config/msgVpns/default/queues -d '{ "queueName": "testQ2", "accessType": "exclusive", "maxMsgSpoolUsage": 200, "permission": "consume", "ingressEnabled": true, "egressEnabled": true }'`;
+const createQueue = (queueName) => {
+  const cmd = `curl -X POST -u admin:admin -H "Content-Type: application/json" http://localhost:8080/SEMP/v2/config/msgVpns/default/queues -d '{ "queueName": "${queueName}", "accessType": "exclusive", "maxMsgSpoolUsage": 200, "permission": "consume", "ingressEnabled": true, "egressEnabled": true }'`;
   exec(cmd, (error, stdout, stderr) => {
     if (error) {
       console.error(`Error creating queue: ${error}`);
@@ -23,4 +23,7 @@ const createQueue = () => {
   });
 };
 
-deleteQueue();
+cleanQueue('q-1');
+cleanQueue('q-2');
+cleanQueue('q-1-dlq');
+cleanQueue('q-2-dlq');
