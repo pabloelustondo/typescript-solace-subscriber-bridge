@@ -29,8 +29,8 @@ function writeToLogs(message) {
   fs.writeFile(logfilename, `${message} ${timestamp} \r\n`, { 'flag': 'a' }, (err) => {
     if (err) throw err;
   });
-  */
   console.log(`Data written to ${logfilename} ${message} ${timestamp}` );
+  */
 }
 
 async function run() {
@@ -38,15 +38,11 @@ async function run() {
 // Connect to MongoDB
   try {
     await client.connect();
-    console.log('Connected to MongoDB!');
-    //TO-DO get collections names from configuration ?
-    await client.db('qb_stats').collection('req-q-1-200').deleteMany({});
-    await client.db('qb_stats').collection('req-q-1-400').deleteMany({});
-    await client.db('qb_stats').collection('req-q-2-200').deleteMany({});
-    await client.db('qb_stats').collection('req-q-2-400').deleteMany({});
-    console.log('Deleted all documents from requests collection');
+    console.log('SERVER Connected to MongoDB!');
+    await client.db('qb_stats').dropDatabase();
+    console.log('SERVER Database dropped');
   } catch(e) { 
-    console.log(`FAILED Connected to MongoDB! ${e}`);
+    console.log(`SERVER FAILED Connected to MongoDB! ${e}`);
   };
 
 
@@ -55,10 +51,11 @@ async function run() {
     if (ALWAYS_SUCCEEDS || ((!ALWAYS_FAILS) && (count % FAILURE_RATE == 0))) {
       res.statusCode = 200;
       countSuccess++;
+      console.log(`SERVER SEND 200  ok processed ${countSuccess} total processed ${count}`)
       writeToLogs(`DID OK. total processed : ${countSuccess} total received ${count}`);
     } else {
       res.statusCode = 400;
-      console.log('I crushed ')
+      console.log(`SERVER SEND 400  ok processed ${countSuccess} total processed ${count}`)
       writeToLogs(`CRASHED. total processed : ${countSuccess} total received ${count}`);
     }
 
@@ -72,19 +69,17 @@ async function run() {
           timestamp: new Date()
 
       })
-        console.log('Inserted document with _id: ' + result.insertedId);
         res.setHeader('Content-Type', 'text/plain');
-        console.log('Received ' + count + " " + req.url)
         count++;
-        res.end(`Received ${req.url}  responded status: ${res.statusCode}`);
+        res.end(`SERVER Received ${req.url}  responded status: ${res.statusCode}`);
       }
       catch (e) {
-        console.log(`ERROR: ${e}`)
+        console.log(`SERVER ERROR: ${e}`)
       }
   });
 
   server.listen(port, hostname, () => {
-    writeToLogs(`Server running at http://${hostname}:${port}/`);
+    writeToLogs(`SERVER running at http://${hostname}:${port}/`);
   });
 
 }
