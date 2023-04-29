@@ -1,9 +1,12 @@
 export type SolaceBridgeConfigType = {
-    bridgeConfig: 
-        {
-            queueName: string,
-            targetURL: string,
-            maxRetry: number,
-            ackOn4xx: boolean
-        }[]
+    bridgeConfig: SolaceBridgeConfigUrlType[]
 }
+
+
+export type SolaceBridgeConfigUrlType = {
+    queueName: string,
+    targetURL: string,
+    maxRetry: number,
+    ackOn4xx: boolean
+};
+

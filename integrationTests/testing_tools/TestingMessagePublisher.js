@@ -3,6 +3,7 @@ const DEFAULT_URL = "ws://localhost:8008";
 const DEFAULT_USER_NAME = "admin";
 const DEFAULT_PASSWORD = "admin";
 const DEFAULT_VPN = "default";
+const TEST_EXIT_DELAY = 1000;
 const TESTS = [{
     queueName: "q-1",
     numOfMessages: 10
@@ -13,7 +14,7 @@ const TESTS = [{
     }]
     
 const DEFAULT_QUEUE_NAME_2 = "q-2";
-const NUMBER_OF_TEST_MESSAGES = 10;
+const NUMBER_OF_TEST_MESSAGES = 1000;
 const WINDOW_SIZE = 50;
 const { v4: uuidv4 } = require('uuid');
 
@@ -198,14 +199,17 @@ var QueueProducer = function (solaceModule, queueName) {
     };
 
     producer.exit = function () {
-        producer.disconnect();
+
         setTimeout(function () {
+            producer.disconnect();
+            console.log("PRODUCER STOPS")
             process.exit();
-        }, 1000); // wait for 1 second to finish
+        }, TEST_EXIT_DELAY); // wait for 1 second to finish
     };
 
     // Gracefully disconnects from Solace PubSub+ Event Broker
     producer.disconnect = function () {
+        console.log("PRODUCER WILL DISCONNECT");
         producer.log('Disconnecting from Solace PubSub+ Event Broker...');
         if (producer.session !== null) {
             try {

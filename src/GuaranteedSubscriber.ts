@@ -242,7 +242,7 @@ export class GuaranteedSubscriber {
                                 this.messagesAcknowledged++;
                             }).
                             catch((error) => {
-                                writeToLogs(`ERROR PROCESSING ${msg} ${msgId} ${error.toString()}}}`)
+                                console.log(`ERROR PROCESSING ${msg} ${msgId} ${error.code}`)
                                 this.internalRetryQueue.processMessage(
                                     message,
                                     0,

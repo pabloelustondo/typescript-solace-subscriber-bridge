@@ -7,14 +7,18 @@ A message will be delayed based on a configuration set up per message type.
 */
 //import { Message } from 'solclientjs'
 //const MAXIMUM_NUMBER_RETRY_OF_MESSAGES: number = 1000
-import { v4 as uuidv4 } from "uuid";
+import { v1 as uuidv4 } from "uuid";
 import { Message } from "solclientjs";
 import { writeToLogs } from "./Logger";
 
+/*
+This is an example of retry strategy. we could add functions to calculate the delay based on the retry number and other ideas. One good idea  is the exponential back-off strategy.
+*/
+
 const retryStrategy: { [key: number]: number } = {
-  // 1: 1000,
-  // 2: 1000,
-  // 3: 1000
+   1: 1000,
+   2: 1000,
+   3: 1000
 };
 
 export class InternalRetryQueue {
@@ -43,7 +47,7 @@ export class InternalRetryQueue {
     const msg = message.getBinaryAttachment().toString();
     const msgId = message.getCorrelationId();
 
-    writeToLogs(`WILL RETRY ${msgId} ${msg} RETRY:${retry} DELAY:${delay}`);
+    console.log(`WILL RETRY LATER ${msgId} ${msg} RETRY:${retry} DELAY:${delay}`);
 
     setTimeout(
       () =>
@@ -68,12 +72,12 @@ export class InternalRetryQueue {
     acknowledger: (message: any) => void,
     sendDeadLetter: (message: any) => void
   ) {
-    this.log(`Processing message retry ${retry}`, this.messageCount.toString());
+    console.log(`PROCESSING RETRY ${retry}`, this.messageCount.toString());
     handler(message)
       .then(() => {
         const msg = message.getBinaryAttachment().toString();
         const msgId = message.getCorrelationId();
-        writeToLogs(`SUCCESS TRY ${msgId} ${msg} TRY:${retry}`);
+        console.log(`SUCCESS TRY ${msgId} ${msg} TRY:${retry}`);
         acknowledger(message);
       })
       .catch(() => {
@@ -125,30 +129,3 @@ export class InternalRetryQueue {
     */
   }
 }
-
-/*
-quick test
-
-
-
-
-import axios from "axios"
-
-const internalRetryQueue = new InternalRetryQueue();
-const testMessage: string = "message content"
-
-
-async function messageHandler(message: string ): Promise<void> { 
-    const messageContent = message || "no payload";
-    console.log("EVENT HANDLER GOT A MESSAGE" + messageContent)
-    return axios({
-        method: "get",
-        url: "http://localhost:3000/message"
-      });
-}
-
-
-internalRetryQueue.processMessageLater("Hello", 1000, () => messageHandler("Hi 1 "));
-internalRetryQueue.processMessageLater("Hello", 1000, () => messageHandler("Hi 2 "));
-
-*/

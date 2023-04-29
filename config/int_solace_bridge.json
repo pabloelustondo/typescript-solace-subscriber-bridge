@@ -1,6 +1,7 @@
 {
     "bridgeConfig": [
-    {"queueName": "queue1", "targetURL": "url1", "maxRetry": 5, "ackOn4xx": false},
-    {"queueName": "queue2", "targetURL": "url2", "maxRetry": -1, "ackOn4xx": true}
+
+    {"queueName": "q-1", "targetURL": "url1", "maxRetry": 5, "ackOn4xx": false},
+    {"queueName": "q-2", "targetURL": "url2", "maxRetry": -1, "ackOn4xx": true}
     ]
 }
