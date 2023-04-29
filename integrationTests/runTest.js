@@ -1,9 +1,15 @@
 const util = require('util');
 const exec = util.promisify(require('child_process').exec);
+const checkDatabase = require('./testing_tools/checkMongo.js');
 
 CONSUMER = "npm start";
 PRODUCER = "node ./testing_tools/TestingMessagePublisher.js";
 SERVER = "node ./testing_tools/BackEndServiceSimulator.js";
+
+function exit(){
+  console.log('Exiting');
+  process.exit();
+}
 
 const cleanQueue = async (queueName) => {
   try {
@@ -76,7 +82,9 @@ async function main() {
     runServer();
 
 
-    await runConsumer();
+    runConsumer();
+
+    setTimeout(() => checkDatabase(exit), 1000);
 
   } catch (err) {
     console.error(`Error running integration test preparation: ${err}`);
