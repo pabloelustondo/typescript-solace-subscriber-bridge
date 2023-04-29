@@ -1,0 +1,9 @@
+{
+  "mongoUrl": "mongodb://localhost:27017/qb_stats",
+  "dbOptions": {
+    "useNewUrlParser": true,
+    "useUnifiedTopology": true
+  },
+  "collections": ["req-q-1-200", "req-q-2-200"],
+  "expectedLength": 1000
+}
