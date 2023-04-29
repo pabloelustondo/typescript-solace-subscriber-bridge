@@ -14,20 +14,25 @@ async function checkDatabase() {
     const client = await MongoClient.connect(config.mongoUrl, config.dbOptions);
     const db = client.db('qb_stats');
 
-    for (const collection of config.collections) {
-      const res = (await db.collection(collection).find({}).toArray()).length;
-      console.log(`Collection ${collection} read: `, res);
-      if (res !== config.expectedLength) {
-        console.error('TEST FAILS FOR NOW');
-        break;
-      }
-    }
+    setInterval(() => checkCollections(db,config), 1000);
 
-    console.log('TEST PASSED OK');
-    client.close();
   } catch (err) {
     console.error(`Error reaching database: ${err}`);
   }
+}
+
+
+async function checkCollections(db, config) { 
+  for (const collection of config.collections) {
+    const res = (await db.collection(collection).find({}).toArray()).length;
+    console.log(`Collection ${collection} read: `, res);
+    if (res !== config.expectedLength) {
+      console.error('TEST FAILS FOR NOW');
+    }
+  }
+
+  console.log('TEST PASSED OK');
+  process.exit()
 }
 
 checkDatabase();
