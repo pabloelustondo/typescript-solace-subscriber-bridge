@@ -1,20 +1,30 @@
 const util = require('util');
-const exec = util.promisify(require('child_process').exec);
+const exec = require('child_process').exec;
+const execAsync = util.promisify(require('child_process').exec);
 const checkDatabase = require('./testing_tools/checkMongo.js');
 
 CONSUMER = "npm start";
 PRODUCER = "node ./testing_tools/TestingMessagePublisher.js";
 SERVER = "node ./testing_tools/BackEndServiceSimulator.js";
 
+let serverProc, consumerProc;
+
 function exit(){
   console.log('Exiting');
+
+  // Kill the child process
+  process.kill(serverProc.pid, 'SIGTERM');
+
+  // Kill the child process
+  process.kill(consumerProc.pid, 'SIGTERM');
+  
   process.exit();
 }
 
 const cleanQueue = async (queueName) => {
   try {
     const cmd = `curl -X DELETE -u admin:admin -H "Content-Type: application/json" http://localhost:8080/SEMP/v2/config/msgVpns/default/queues/${queueName}`;
-    await exec(cmd);
+    await execAsync(cmd);
     console.log(`Queue cleaned: ${queueName}`);
     await createQueue(queueName);
   } catch (error) {
@@ -27,7 +37,7 @@ const createQueue = async (queueName) => {
   try {
     const cmd = `curl -X POST -u admin:admin -H "Content-Type: application/json" http://localhost:8080/SEMP/v2/config/msgVpns/default/queues -d '{ "queueName": "${queueName}", "accessType": "exclusive", "maxMsgSpoolUsage": 200, "permission": "consume", "ingressEnabled": true, "egressEnabled": true }'`;
 
-    await exec(cmd);
+    await execAsync(cmd);
     console.log(`Queue created: ${queueName}`);
 
   } catch (error) {
@@ -40,25 +50,25 @@ const createQueue = async (queueName) => {
 async function runProducer() {
   console.log('PRODUCER starting');
   try {
-    await exec(PRODUCER);
+    await execAsync(PRODUCER);
   } catch (error) {
     console.error(`Error running producer: ${error}`);
   }
 }
 
-async function runConsumer() {
+function runConsumer() {
   console.log('PRODUCER starting');
   try {
-    await exec(CONSUMER);
+    return exec(CONSUMER);
   } catch (error) {
     console.error(`Error running producer: ${error}`);
   }
 }
 
-async function runServer() {
+function runServer() {
   console.log('SERVER  starting');
   try {
-    exec(SERVER);
+    return exec(SERVER);
   } catch (error) {
     console.error(`Error running server: ${error}`);
   }
@@ -79,10 +89,12 @@ async function main() {
     await runProducer();
 
      // Run Server  for ever... this will have to be killed manually
-    runServer();
+    serverProc = runServer();
+    console.log("SERVER PROC: " + serverProc.pid);
 
 
-    runConsumer();
+    consumerProc = runConsumer();
+    console.log("CONSUMER PROC " + consumerProc.pid)
 
     setTimeout(() => checkDatabase(exit), 1000);
 

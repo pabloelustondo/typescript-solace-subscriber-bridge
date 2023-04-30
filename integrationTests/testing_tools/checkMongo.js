@@ -38,8 +38,9 @@ async function checkCollections(db, config, exitFunction) {
       return;
     }
   }
-
-  console.log(`TEST PASSED OK ${collectionStatus}`);
+  console.log(`========= TEST PASSED OK ========='`);
+  console.log(`========= TEST PASSED OK ========= ${collectionStatus}`);
+  console.log(`========= TEST PASSED OK =========`);
   exitFunction();
 }
 //checkDatabase(exit);
