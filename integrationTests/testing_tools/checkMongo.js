@@ -1,7 +1,6 @@
 const { MongoClient } = require('mongodb');
-const fs = require('fs').promises;
+const getConfig = require('./getConfig');
 const argv = require('yargs').argv;
-const path = require('path');
 
 const exit = () => {
   console.log('Exiting');
@@ -10,9 +9,7 @@ const exit = () => {
 async function checkDatabase(exitFunction) {
   try {
     console.log('CHECK DATABASE STARTS');
-    const cwd = path.resolve(__dirname);
-    const configFileName = argv.config ||`${cwd}/test-config.json`;
-    const config = JSON.parse(await fs.readFile(configFileName, 'utf-8'));
+    const config = await getConfig(argv);
 
     console.log('Starting Test Config:', config);
 

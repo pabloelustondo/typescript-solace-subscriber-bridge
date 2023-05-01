@@ -1,33 +1,21 @@
+const fs = require('fs').promises;
+const argv = require('yargs').argv;
+const path = require('path');
+
 var solace = require('solclientjs').debug; // logging supported
-const DEFAULT_URL = "ws://localhost:8008";
-const DEFAULT_USER_NAME = "admin";
-const DEFAULT_PASSWORD = "admin";
-const DEFAULT_VPN = "default";
-const TEST_EXIT_DELAY = 1000;
-const TESTS = [{
-    queueName: "q-1",
-    numOfMessages: 10
-        },
-        {
-    queueName: "q-2",
-    numOfMessages: 10
-    }]
-    
-const DEFAULT_QUEUE_NAME_2 = "q-2";
-const NUMBER_OF_TEST_MESSAGES = 1000;
-const WINDOW_SIZE = 50;
+
 const { v4: uuidv4 } = require('uuid');
 
 
 
-
-var QueueProducer = function (solaceModule, queueName) {
+var QueueProducer = function (solaceModule, queueName, config) {
     'use strict';
     var solace = solaceModule;
     var producer = {};
+    producer.config = config;
     producer.session = null;
     producer.queueName = queueName;
-    producer.numOfMessages = NUMBER_OF_TEST_MESSAGES;
+    producer.numOfMessages = config.producer.NUMBER_OF_TEST_MESSAGES;
     producer.numOfMessagesSent = 0;
     producer.numOfMessagesConfirmed = 0;
     producer.numOfMessagesInWindow = 0;
@@ -52,15 +40,6 @@ var QueueProducer = function (solaceModule, queueName) {
 
     producer.checkFlow = () => {
         const now = new Date();
-
-        /*
-            producer.queueName = queueName;
-            producer.numOfMessages = NUMBER_OF_TEST_MESSAGES;
-            producer.numOfMessagesSent = 0;
-            producer.numOfMessagesConfirmed = 0;
-            producer.numOfMessagesInWindow = 0;
-            producer.messageAckRecvd = 0;
-        */
         console.log(`HEARTBEAT ${producer.queueName} sent: ${producer.numOfMessagesSent} acks: ${producer.messageAckRecvd} window: ${producer.numOfMessagesInWindow} time: ${now.toLocaleTimeString()} ${now.getMilliseconds()}`);
      }
 
@@ -80,13 +59,13 @@ var QueueProducer = function (solaceModule, queueName) {
             return;
         }
 
-        var hosturl = DEFAULT_URL;
+        var hosturl = config.producer.DEFAULT_URL; //SOLACE
         producer.log('Connecting to Solace PubSub+ Event Broker using url: ' + hosturl);
-        var username = DEFAULT_USER_NAME
+        var username = config.producer.DEFAULT_USER_NAME
         producer.log('Client username: ' + username);
-        var vpn = DEFAULT_VPN
+        var vpn = config.producer.DEFAULT_VPN
         producer.log('Solace PubSub+ Event Broker VPN name: ' + vpn);
-        var pass = DEFAULT_PASSWORD
+        var pass = config.producer.DEFAULT_PASSWORD
         // create session
         try {
             producer.session = solace.SolclientFactory.createSession({
@@ -101,7 +80,7 @@ var QueueProducer = function (solaceModule, queueName) {
             });
             // configure the GM window size
             const flowProps = new solace.FlowProperties()
-            flowProps.setGuaranteedWindowSize(WINDOW_SIZE)
+            flowProps.setGuaranteedWindowSize(config.producer.WINDOW_SIZE)
 
         } catch (error) {
             producer.log(error.toString());
@@ -156,7 +135,7 @@ var QueueProducer = function (solaceModule, queueName) {
         if (producer.session !== null) {
             //TO DO FIX THIS LOOP WHEN NUMBER OF MESSAGES IS SMALL
             for (let x = producer.numOfMessagesInWindow;
-                x < WINDOW_SIZE && this.numOfMessagesSent < this.numOfMessages;
+                x < config.producer.WINDOW_SIZE && this.numOfMessagesSent < this.numOfMessages;
                 x++) { 
                 await producer.sendMessage(producer.numOfMessagesSent);
             }
@@ -204,7 +183,7 @@ var QueueProducer = function (solaceModule, queueName) {
             producer.disconnect();
             console.log("PRODUCER STOPS")
             process.exit();
-        }, TEST_EXIT_DELAY); // wait for 1 second to finish
+        }, config.producer.TEST_EXIT_DELAY); // wait for 1 second to finish
     };
 
     // Gracefully disconnects from Solace PubSub+ Event Broker
@@ -225,8 +204,10 @@ var QueueProducer = function (solaceModule, queueName) {
     return producer;
 };
 
-async function runTest(queueName) {
-    // Initialize factory with the most recent API defaults
+async function runTest(test, config) {
+
+    const queueName = test.queueName;
+         // Initialize factory with the most recent API defaults
     var factoryProps = new solace.SolclientFactoryProperties();
     factoryProps.profile = solace.SolclientFactoryProfiles.version10;
     solace.SolclientFactory.init(factoryProps);
@@ -236,17 +217,24 @@ async function runTest(queueName) {
     solace.SolclientFactory.setLogLevel(solace.LogLevel.WARN);
 
     // create the producer, specifying the name of the destination queue
-    var producer = new QueueProducer(solace, queueName);
+    var producer = new QueueProducer(solace, queueName, config);
 
     // send message to Solace PubSub+ Event Broker
     await producer.run(process.argv);
 
     //console.log("DONE"); 
 }
-/*
-const DEFAULT_QUEUE_NAME_1 = "q-1";
-const DEFAULT_QUEUE_NAME_2 = "q-2";
-*/
-runTest(TESTS[0].queueName);
-runTest(TESTS[1].queueName);
+
+async function runTests(){ 
+    const getConfig = require('./getConfig');
+    const config = await getConfig(argv);
+
+for (const test of config.producer.TEST) { 
+    runTest(test, config);
+}
+
+}
+
+runTests();
+
 
