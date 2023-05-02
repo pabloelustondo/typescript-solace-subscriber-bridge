@@ -9,6 +9,8 @@
   "expectedLength": 1000,
 
   "server":{  
+    "writeToFile": false,
+    "writeToConsole": true,
     "test_db_name": "qb_stats",
     "url": "mongodb://localhost:27017",
     "ALWAYS_SUCCEEDS": true,

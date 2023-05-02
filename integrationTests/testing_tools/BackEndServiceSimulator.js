@@ -4,12 +4,6 @@ const MongoClient = require('mongodb').MongoClient;
 const getConfig = require('./getConfig');
 const argv = require('yargs').argv;
 
-// MongoDB connection URL
-
-
-
-
-
 const logtimestamp = (new Date()).toLocaleTimeString();
 const logfilename1 = `./logs/qb_consumer-log${logtimestamp}.log`;
 const logfilename = logfilename1.replace(":","-")
@@ -17,19 +11,20 @@ const logfilename = logfilename1.replace(":","-")
 let count = 0;
 let countSuccess = 0;
 
-
-function writeToLogs(message) { 
+function writeToLogs(message, config) { 
   const timestamp = (new Date()).toLocaleTimeString();
- /*
-  fs.writeFile(logfilename, `${message} ${timestamp} \r\n`, { 'flag': 'a' }, (err) => {
-    if (err) throw err;
-  });
-  console.log(`Data written to ${logfilename} ${message} ${timestamp}` );
-  */
+  if (config.server.writeToFile) {
+    fs.writeFile(logfilename, `${message} ${timestamp} \r\n`, { 'flag': 'a' }, (err) => {
+      if (err) throw err;
+    });
+  }
+
+  if (config.server.writeToConsole) { 
+    console.log(`Data written to ${logfilename} ${message} ${timestamp}` );
+  }
+
 }
-
 async function run() {
-
 
   const config = await getConfig(argv);
     // Create a new MongoClient
@@ -52,11 +47,11 @@ async function run() {
       res.statusCode = 200;
       countSuccess++;
       console.log(`SERVER SEND 200  ok processed ${countSuccess} total processed ${count}`)
-      writeToLogs(`DID OK. total processed : ${countSuccess} total received ${count}`);
+      writeToLogs(`DID OK. total processed : ${countSuccess} total received ${count}`,config);
     } else {
-      res.statusCode = 400;
-      console.log(`SERVER SEND 400  ok processed ${countSuccess} total processed ${count}`)
-      writeToLogs(`CRASHED. total processed : ${countSuccess} total received ${count}`);
+      res.statusCode = 500;
+      console.log(`SERVER SEND 500  ok processed ${countSuccess} total processed ${count}`)
+      writeToLogs(`CRASHED. total processed : ${countSuccess} total received ${count}`,config);
     }
 
     const parsedUrl = req.url
@@ -79,7 +74,7 @@ async function run() {
   });
 
   server.listen(config.server.port, config.server.hostname, () => {
-    writeToLogs(`SERVER running at http://${config.server.hostname}:${config.server.port}/`);
+    writeToLogs(`SERVER running at http://${config.server.hostname}:${config.server.port}/`, config);
   });
 
 }
