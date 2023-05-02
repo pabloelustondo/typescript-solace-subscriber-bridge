@@ -6,6 +6,16 @@
   },
   "collections": ["req-q-1-200", "req-q-2-200"],
   "expectedLength": 1000,
+
+  "server":{  
+    "test_db_name": "qb_stats",
+    "url": "mongodb://localhost:27017",
+    "ALWAYS_SUCCEEDS": true,
+    "ALWAYS_FAILS":false,
+    "FAILURE_RATE":2,
+    "hostname": "127.0.0.1",
+    "port": 3000
+  },
   
   "producer":{
     "DEFAULT_URL": "ws://localhost:8008",
