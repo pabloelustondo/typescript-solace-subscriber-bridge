@@ -1,13 +1,17 @@
 
+const getConfig = require('./getConfig');
+const argv = require('yargs').argv;
 const { MongoClient } = require('mongodb');
 
-const mongoUrl = 'mongodb://localhost:27017/qb_stats';
 const dbOptions = { useNewUrlParser: true, useUnifiedTopology: true };
 
 async function cleanDatabase() {
   try {
-    const client = await MongoClient.connect(mongoUrl, dbOptions);
-    const db = client.db('qb-stats');
+
+    const config = await getConfig(argv);
+
+    const client = await MongoClient.connect(config.mongoUrl, dbOptions);
+    const db = client.db(config.test_db_name);
 
     await db.dropDatabase();
     console.log('Database dropped');
