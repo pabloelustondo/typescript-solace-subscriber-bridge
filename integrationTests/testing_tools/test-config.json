@@ -1,6 +1,7 @@
 {
   "mongoUrl": "mongodb://localhost:27017/qb_stats",
   "test_db_name": "qb_stats",
+  "check_database_interval": 1000,
   "dbOptions": {
     "useNewUrlParser": true,
     "useUnifiedTopology": true

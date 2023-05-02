@@ -14,9 +14,9 @@ async function checkDatabase(exitFunction) {
     console.log('Starting Test Config:', config);
 
     const client = await MongoClient.connect(config.mongoUrl, config.dbOptions);
-    const db = client.db('qb_stats');
+    const db = client.db(config.test_db_name);
 
-    setInterval(() => checkCollections(db,config, exitFunction), 1000);
+    setInterval(() => checkCollections(db,config, exitFunction), config.check_database_interval);
 
   } catch (err) {
     console.error(`Error reaching database: ${err}`);
